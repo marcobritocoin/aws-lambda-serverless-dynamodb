@@ -1,0 +1,62 @@
+service: aws-lambda-test
+
+frameworkVersion: '2'
+
+custom:
+  settings: 
+    POSTS_TABLE: mensajes
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  lambdaHashingVersion: 20201221
+  environment: ${self:custom.settings}
+  region: us-east-2
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.settings.POSTS_TABLE}"
+
+functions:
+  inicio:
+    handler: handler.inicio
+    events:
+      - http:
+          path: /
+          method: get
+  getSigneBlock:
+    handler: handler.getSigneBlock
+    events:
+      - http:
+          path: /signeblock
+          method: get
+  postSigneBlock:
+    handler: handler.postSigneBlock
+    events:
+      - http:
+          path: /signeblock
+          method: post
+          cors: true
+
+resources:
+  Resources:
+    MensajesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: "id"
+            AttributeType: "S"
+        KeySchema:
+          - AttributeName: "id"
+            KeyType:  "HASH"
+        ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+        TableName: ${self:custom.settings.POSTS_TABLE}
